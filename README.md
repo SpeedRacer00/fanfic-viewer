@@ -9,7 +9,7 @@
 
 ---
 
-### [Launch Fanfic Viewer](file:///C:/Users/knigh/Desktop/viewer.html)
+### [Launch Fanfic Viewer]([file:///C:/Users/knigh/Desktop/viewer.html](https://speedracer00.github.io/Fanfic-Viewer/))
 
 </div>
 
