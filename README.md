@@ -14,8 +14,8 @@
 </div>
 
 ## 🌟 Features
-* **Smart Themes** – Choose between Steam, ChatGPT, Discord, Messenger, and WhatsApp aesthetics.
-* **Theme Designer** – Full color control over headers, backgrounds, and chat bubbles.
+* **Themes** – Choose between Steam, ChatGPT, Discord, Messenger, and WhatsApp themes (All Dark Mode).
+* **Custom Themes** – Full color control over headers, backgrounds, and chat bubbles.
 * **Auto-Contrast** – Text automatically flips between light and dark based on your theme's brightness.
 * **Persistence** – Save your custom colors so they stay the same even after a refresh.
 * **New File Button** – Quickly swap between different fanfic stories.
