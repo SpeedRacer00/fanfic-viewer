@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Fanfic Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <style>
@@ -20,33 +20,47 @@
         
         body.theme-custom { --bubble-outline: none; }
 
-        html, body { margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; -ms-overflow-style: none; scrollbar-width: none; }
-        html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+        /* Prevent the white/bg-color flash by making html match the background */
+        html { 
+            background-color: var(--bg); 
+            height: 100%;
+            overflow: hidden;
+        }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
             color: var(--text);
+            margin: 0; padding: 0;
             display: flex; flex-direction: column;
             transition: background-color 0.3s;
-            padding-top: 60px; 
+            padding-top: 60px;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch; /* Smooth scroll for iOS/Android */
         }
 
-        /* --- BACKGROUND LAYERS WITH OVERSCAN FIX --- */
-        #video-bg, #image-bg {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 115vh; /* Taller than screen to hide URL bar gaps */
-            object-fit: cover; 
-            z-index: -2; 
+        /* --- STABILIZED BACKGROUNDS --- */
+        .bg-container {
+            position: fixed;
+            top: -10%; /* Extra bleed top */
+            left: 0;
+            width: 100%;
+            height: 120%; /* Extra bleed bottom */
+            z-index: -1;
             pointer-events: none;
-            will-change: transform;
-            /* Shift up slightly to center the overscan */
-            transform: translateY(-7.5%); 
         }
-        #video-bg { display: none; z-index: -1; }
+
+        #video-bg, #image-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            will-change: transform;
+        }
+        
+        #video-bg { display: none; }
         #image-bg { background-size: cover; background-position: center; }
 
         header {
@@ -55,7 +69,7 @@
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border);
             z-index: 9999; color: var(--header-text);
-            box-sizing: border-box; transform: translateZ(0);
+            box-sizing: border-box;
         }
 
         #header-title { color: var(--header-text); font-weight: bold; }
@@ -74,9 +88,6 @@
             position: fixed; top: 60px; left: 0; width: 100%; z-index: 9998;
             box-sizing: border-box;
         }
-        .color-group { display: flex; align-items: center; gap: 5px; }
-        input[type="color"] { border: none; width: 22px; height: 22px; cursor: pointer; background: none; padding: 0; }
-        .img-upload { font-size: 10px; background: #333; border: 1px solid #555; color: #ccc; border-radius: 3px; max-width: 140px; }
 
         #chat-container { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 900px; margin: 0 auto; width: calc(100% - 40px); }
 
@@ -96,8 +107,10 @@
 </head>
 <body id="main-body">
 
-<div id="image-bg"></div>
-<video id="video-bg" autoplay loop muted playsinline></video>
+<div class="bg-container">
+    <div id="image-bg"></div>
+    <video id="video-bg" autoplay loop muted playsinline></video>
+</div>
 
 <header>
     <span id="header-title">Fanfic Viewer</span>
@@ -135,6 +148,7 @@
     const customPanel = document.getElementById('custom-panel');
     const toggleBtn = document.getElementById('toggle-custom');
     const body = document.getElementById('main-body');
+    const htmlEl = document.documentElement;
     const saveBtn = document.getElementById('save-theme');
     const bgUpload = document.getElementById('bgUpload');
     const videoBg = document.getElementById('video-bg');
@@ -150,16 +164,6 @@
         ai: document.getElementById('aiColor')
     };
 
-    // --- MOBILE VIEWPORT LOCK ---
-    function lockBackgroundHeight() {
-        // Lock height to 115% of current innerHeight to cover URL bar hiding
-        const vh = window.innerHeight * 1.15;
-        imageBg.style.height = vh + 'px';
-        videoBg.style.height = vh + 'px';
-    }
-    window.addEventListener('load', lockBackgroundHeight);
-    window.addEventListener('orientationchange', () => setTimeout(lockBackgroundHeight, 200));
-
     function getBrightness(hexColor) {
         const rgb = parseInt(hexColor.slice(1), 16);
         return ((rgb >> 16 & 0xff) * 299 + (rgb >> 8 & 0xff) * 587 + (rgb & 0xff) * 114) / 1000;
@@ -168,6 +172,7 @@
     function applyCustomMedia() {
         body.style.setProperty('--header', pickers.header.value);
         body.style.setProperty('--bg', pickers.bg.value);
+        htmlEl.style.setProperty('--bg', pickers.bg.value); // Sync html bg
         body.style.setProperty('--user-bg', pickers.user.value);
         body.style.setProperty('--ai-bg', pickers.ai.value);
 
@@ -214,7 +219,6 @@
     };
 
     window.onload = () => {
-        lockBackgroundHeight();
         const saved = localStorage.getItem('fanfic-custom-theme');
         if (saved) {
             const data = JSON.parse(saved);
@@ -244,7 +248,10 @@
             toggleBtn.style.display = 'none';
             customPanel.style.display = 'none';
             body.className = themeSelect.value === 'default' ? '' : themeSelect.value;
-            ['--header', '--bg', '--user-bg', '--ai-bg', '--header-text', '--user-text', '--ai-text'].forEach(prop => body.style.removeProperty(prop));
+            ['--header', '--bg', '--user-bg', '--ai-bg', '--header-text', '--user-text', '--ai-text'].forEach(prop => {
+                body.style.removeProperty(prop);
+                htmlEl.style.removeProperty(prop);
+            });
         }
     };
 
