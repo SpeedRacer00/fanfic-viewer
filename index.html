@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fanfic Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <style>
@@ -20,7 +20,7 @@
         
         body.theme-custom { --bubble-outline: none; }
 
-        html, body { margin: 0; padding: 0; min-height: 100vh; -ms-overflow-style: none; scrollbar-width: none; }
+        html, body { margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; -ms-overflow-style: none; scrollbar-width: none; }
         html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 
         body {
@@ -29,41 +29,42 @@
             color: var(--text);
             display: flex; flex-direction: column;
             transition: background-color 0.3s;
+            padding-top: 60px; /* Offset for fixed header */
         }
 
-        #video-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: -1; display: none;
+        /* --- BACKGROUND LAYERS --- */
+        #video-bg, #image-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            object-fit: cover; z-index: -2; pointer-events: none;
+            will-change: transform;
         }
-        
-        #image-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover; background-position: center;
-            background-attachment: fixed; z-index: -2;
-        }
+        #video-bg { display: none; z-index: -1; }
+        #image-bg { background-size: cover; background-position: center; }
 
         header {
-            padding: 10px 20px; background: var(--header);
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            padding: 0 20px; background: var(--header);
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 100; color: var(--header-text);
+            z-index: 9999; color: var(--header-text);
+            box-sizing: border-box; transform: translateZ(0);
         }
 
         #header-title { color: var(--header-text); font-weight: bold; }
         .controls { display: flex; gap: 8px; align-items: center; }
         
-        select, .btn-ui, .icon-btn { 
+        select, .btn-ui { 
             background: #444; color: #fff; border: 1px solid #666; 
             padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; 
         }
-        .icon-btn { font-size: 16px; padding: 3px 8px; display: none; }
-        .save-btn { background: #28a745; border-color: #1e7e34; margin-left: 10px; }
+        .save-btn { background: #28a745; border-color: #1e7e34; }
 
         #custom-panel {
             display: none; background: var(--header); padding: 12px 20px;
             border-bottom: 1px solid var(--border); gap: 15px; align-items: center; 
             font-size: 11px; color: var(--header-text); flex-wrap: wrap;
-            position: sticky; top: 45px; z-index: 99;
+            position: fixed; top: 60px; left: 0; width: 100%; z-index: 9998;
+            box-sizing: border-box;
         }
         .color-group { display: flex; align-items: center; gap: 5px; }
         input[type="color"] { border: none; width: 22px; height: 22px; cursor: pointer; background: none; padding: 0; }
@@ -93,7 +94,7 @@
 <header>
     <span id="header-title">Fanfic Viewer</span>
     <div class="controls">
-        <button id="toggle-custom" class="icon-btn">⚙️</button>
+        <button id="toggle-custom" class="btn-ui">⚙️</button>
         <select id="theme-select">
             <option value="default">Steam Blue</option>
             <option value="theme-chatgpt">ChatGPT</option>
@@ -140,6 +141,15 @@
         user: document.getElementById('userColor'),
         ai: document.getElementById('aiColor')
     };
+
+    // --- MOBILE VIEWPORT LOCK ---
+    function lockBackgroundHeight() {
+        const vh = window.innerHeight;
+        imageBg.style.height = vh + 'px';
+        videoBg.style.height = vh + 'px';
+    }
+    window.addEventListener('load', lockBackgroundHeight);
+    window.addEventListener('orientationchange', () => setTimeout(lockBackgroundHeight, 200));
 
     function getBrightness(hexColor) {
         const rgb = parseInt(hexColor.slice(1), 16);
@@ -190,11 +200,12 @@
         };
         try {
             localStorage.setItem('fanfic-custom-theme', JSON.stringify(customTheme));
-            alert(isPersistent ? 'Theme & Background saved!' : 'Colors saved! GIFs and Videos must be re-uploaded each session.');
+            alert(isPersistent ? 'Theme & BG saved!' : 'Colors saved! GIFs and Videos must be re-uploaded each session.');
         } catch(e) { alert("File too large to save permanently!"); }
     };
 
     window.onload = () => {
+        lockBackgroundHeight();
         const saved = localStorage.getItem('fanfic-custom-theme');
         if (saved) {
             const data = JSON.parse(saved);
@@ -202,7 +213,7 @@
             if (data.savedImg) { currentMedia = data.savedImg; mediaType = "image"; }
             if (data.lastMode === 'custom') {
                 themeSelect.value = 'custom';
-                toggleBtn.style.display = 'flex';
+                toggleBtn.style.display = 'block';
                 body.classList.add('theme-custom');
                 applyCustomMedia();
             }
@@ -216,7 +227,7 @@
         videoBg.style.display = "none";
         imageBg.style.backgroundImage = "none";
         if (themeSelect.value === 'custom') {
-            toggleBtn.style.display = 'flex';
+            toggleBtn.style.display = 'block';
             customPanel.style.display = 'flex';
             body.classList.add('theme-custom');
             applyCustomMedia();
@@ -230,7 +241,6 @@
 
     Object.values(pickers).forEach(p => p.oninput = applyCustomMedia);
 
-    // Standard Loading Logic
     const dropZone = document.getElementById('drop-zone');
     const container = document.getElementById('chat-container');
     const resetBtn = document.getElementById('reset-page');
