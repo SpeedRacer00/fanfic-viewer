@@ -20,7 +20,6 @@
         
         body.theme-custom { --bubble-outline: none; }
 
-        /* Prevent the white/bg-color flash by making html match the background */
         html { 
             background-color: var(--bg); 
             height: 100%;
@@ -38,18 +37,19 @@
             height: 100%;
             overflow-y: auto;
             overflow-x: hidden;
-            -webkit-overflow-scrolling: touch; /* Smooth scroll for iOS/Android */
+            -webkit-overflow-scrolling: touch;
         }
 
         /* --- STABILIZED BACKGROUNDS --- */
         .bg-container {
             position: fixed;
-            top: -10%; /* Extra bleed top */
+            top: 0;
             left: 0;
-            width: 100%;
-            height: 120%; /* Extra bleed bottom */
+            width: 100vw;
+            height: 120vh; /* Overscan to prevent bottom gap */
             z-index: -1;
             pointer-events: none;
+            transform: translateY(-10vh); /* Center the overscan */
         }
 
         #video-bg, #image-bg {
@@ -57,7 +57,6 @@
             height: 100%;
             object-fit: cover;
             display: block;
-            will-change: transform;
         }
         
         #video-bg { display: none; }
@@ -172,7 +171,7 @@
     function applyCustomMedia() {
         body.style.setProperty('--header', pickers.header.value);
         body.style.setProperty('--bg', pickers.bg.value);
-        htmlEl.style.setProperty('--bg', pickers.bg.value); // Sync html bg
+        htmlEl.style.setProperty('--bg', pickers.bg.value);
         body.style.setProperty('--user-bg', pickers.user.value);
         body.style.setProperty('--ai-bg', pickers.ai.value);
 
