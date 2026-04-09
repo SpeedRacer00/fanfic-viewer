@@ -25,7 +25,7 @@
 ---
 
 ## 🛠️ How to Use
-1. **Export** your chat using the [ChatGPT Exporter](https://www.chatgptexporter.com/en).
+1. **Export** your chat using [ChatGPT Exporter](https://www.chatgptexporter.com/en).
 2. **Open** [Fanfic-Viewer](https://speedracer00.github.io/Fanfic-Viewer/).
 3. **Upload** your story: Drag and drop your `.md` or `.txt` file onto the page.
 4. **Style**: Click the ⚙️ icon to open the Custom Panel:
