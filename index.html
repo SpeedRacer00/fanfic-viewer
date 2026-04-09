@@ -21,14 +21,14 @@
         body.theme-custom { --bubble-outline: none; }
 
         html { 
-            background-color: #000; /* Dark fallback */
+            background-color: #000;
             height: 100%;
             overflow: hidden;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: transparent; /* Essential for seeing the background through the body */
+            background-color: transparent; 
             color: var(--text);
             margin: 0; padding: 0;
             display: flex; flex-direction: column;
@@ -42,11 +42,11 @@
         /* --- THE BACKGROUND FIX --- */
         #fixed-bg-layer {
             position: fixed;
-            top: -10vh; /* Overscan top */
+            top: -10vh;
             left: 0;
             width: 100vw;
-            height: 125vh; /* Overscan bottom */
-            z-index: -10; /* Put it behind everything */
+            height: 125vh;
+            z-index: -10;
             background-color: var(--bg);
             pointer-events: none;
         }
@@ -83,13 +83,22 @@
             padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; 
         }
 
+        /* --- MINI CUSTOM PANEL --- */
         #custom-panel {
-            display: none; background: var(--header); padding: 12px 20px;
-            border-bottom: 1px solid var(--border); gap: 15px; align-items: center; 
-            font-size: 11px; color: var(--header-text); flex-wrap: wrap;
+            display: none; background: var(--header); padding: 10px 15px;
+            border-bottom: 1px solid var(--border); 
+            gap: 12px; align-items: center; justify-content: center;
+            font-size: 10px; color: var(--header-text); flex-wrap: wrap;
             position: fixed; top: 60px; left: 0; width: 100%; z-index: 9998;
             box-sizing: border-box;
         }
+        .color-group { display: flex; align-items: center; gap: 4px; }
+        input[type="color"] { 
+            border: none; width: 18px; height: 18px; 
+            cursor: pointer; background: none; padding: 0; 
+            vertical-align: middle;
+        }
+        .img-upload { font-size: 9px; background: #333; border: 1px solid #555; color: #ccc; border-radius: 3px; width: 110px; }
 
         #chat-container { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 900px; margin: 0 auto; width: calc(100% - 40px); }
 
@@ -131,15 +140,14 @@
 </header>
 
 <div id="custom-panel">
-    <div class="color-group"><label>Header:</label><input type="color" id="headerColor" value="#171a21"></div>
-    <div class="color-group"><label>BG Color:</label><input type="color" id="bgColor" value="#1b2838"></div>
-    <div class="color-group"><label>User:</label><input type="color" id="userColor" value="#2a475e"></div>
-    <div class="color-group"><label>AI:</label><input type="color" id="aiColor" value="#3d3d3d"></div>
+    <div class="color-group"><label>HDR</label><input type="color" id="headerColor" value="#171a21"></div>
+    <div class="color-group"><label>BG</label><input type="color" id="bgColor" value="#1b2838"></div>
+    <div class="color-group"><label>USR</label><input type="color" id="userColor" value="#2a475e"></div>
+    <div class="color-group"><label>AI</label><input type="color" id="aiColor" value="#3d3d3d"></div>
     <div class="color-group">
-        <label>Custom BG:</label>
         <input type="file" id="bgUpload" accept="image/*,video/mp4" class="img-upload">
     </div>
-    <button id="save-theme" class="btn-ui save-btn" style="background: #28a745; border-color: #1e7e34; color: white;">Save Colors</button>
+    <button id="save-theme" class="btn-ui" style="background: #28a745; border:none; height: 22px; padding: 0 8px;">Save</button>
 </div>
 
 <div id="drop-zone">Click or drop your fanfic here.</div>
@@ -216,8 +224,8 @@
         };
         try {
             localStorage.setItem('fanfic-custom-theme', JSON.stringify(customTheme));
-            alert(isPersistent ? 'Theme & BG saved!' : 'Colors saved! GIFs and Videos must be re-uploaded each session.');
-        } catch(e) { alert("File too large to save permanently!"); }
+            alert(isPersistent ? 'Theme & BG saved!' : 'Colors saved!');
+        } catch(e) { alert("File too large to save!"); }
     };
 
     window.onload = () => {
