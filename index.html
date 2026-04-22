@@ -276,26 +276,35 @@
 
     function parseContent(text) {
         container.innerHTML = '';
+        // Use a more aggressive split that captures the type immediately
         const parts = text.split(/##\s*(Prompt|Response):?/gi);
         
+        // Parts[0] is everything BEFORE the first ## Prompt.
+        // We start at i=1 to skip that header junk.
         for (let i = 1; i < parts.length; i += 2) {
             const type = parts[i].toLowerCase();
             let content = parts[i + 1] || "";
 
+            // Mobile-friendly cleanup for exporter timestamps
             content = content.replace(/^\d{1,2}\/\d{1,2}\/\d{4}.*?\n/i, '');
+
+            // Cleanup the end of the file
             if (i + 2 >= parts.length) {
-                content = content.split('---')[0].split('Powered by')[0];
+                content = content.split('---')[0].split('Powered by')[0].split('Something went wrong')[0].trim();
             }
 
             if (content.trim()) {
                 const isUser = (type === 'prompt');
                 const div = document.createElement('div');
                 div.className = `bubble ${isUser ? 'user' : 'ai'}`;
+                
                 const label = document.createElement('span');
                 label.className = 'label';
                 label.innerText = isUser ? 'User' : 'ChatGPT';
+                
                 const textBody = document.createElement('div');
                 textBody.innerHTML = marked.parse(content.trim());
+                
                 div.appendChild(label);
                 div.appendChild(textBody);
                 container.appendChild(div);
