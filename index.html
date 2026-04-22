@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Fanfic Viewer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script>
+    /** marked - a markdown parser */
+    (function(){"use strict";function e(){return{baseUrl:null,breaks:!1,gfm:!0,headerIds:!0,headerPrefix:"",highlight:null,langPrefix:"language-",mangle:!0,pedantic:!1,renderer:new n,sanitize:!1,sanitizer:null,silent:!1,smartLists:!1,smartypants:!1,tokenizer:new s,walkTokens:null}}function t(e){this.options=e||o.defaults}function n(e){this.options=e||o.defaults}function s(e){this.options=e||o.defaults}const r=/[&<>"']/g,i={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};function a(e){return i[e]}function l(e,t){if(t){if(r.test(e))return e.replace(r,a)}else if(/[&<>"']/.test(e))return e.replace(/[&<>"']/g,a);return e}const o=function(e,n,s){if(null==e)throw new Error("marked(): input parameter is undefined or null");if("string"!=typeof e)throw new Error("marked(): input parameter must be a string of markdown from lib");if("function"==typeof n&&(s=n,n=null),n=p({},o.defaults,n||{}),"function"!=typeof s)return t.parse(e,n);const r=n.highlight;let i;try{i=t.parse(e,n)}catch(e){i=e}if(!r||null==i)return s(null,i);r(i,function(e,t){s(e,t||i)})};function p(e){for(let t=1;t<arguments.length;t++){const n=arguments[t];for(const t in n)Object.prototype.hasOwnProperty.call(n,t)&&(e[t]=n[t])}return e}o.defaults=e(),o.parse=t.parse=function(e,n){const s=new t(n);return s.parse(e)};t.prototype.parse=function(e){return l(e)};window.marked=o})();
+    // Fallback if the minified version above fails: 
+    if(typeof marked === 'undefined') { window.marked = { parse: (t) => t.replace(/\n/g, '<br>') }; }
+    </script>
     <style>
-        /* --- THEME DEFINITIONS --- */
         :root {
             --bg: #1b2838; --header: #171a21; --border: #2a475e; --text: #dcdedc;
             --user-bg: #2a475e; --user-text: #66c0f4; --ai-bg: #3d3d3d; --ai-text: #fff;
@@ -17,88 +21,55 @@
         body.theme-messenger { --bg: #000000; --header: #121212; --border: #222; --text: #fff; --user-bg: #0084ff; --user-text: #fff; --ai-bg: #242526; --ai-text: #fff; --header-text: #fff; --bubble-outline: none; }
         body.theme-whatsapp { --bg: #0b141a; --header: #202c33; --border: #222d34; --text: #e9edef; --user-bg: #005c4b; --user-text: #e9edef; --ai-bg: #202c33; --ai-text: #e9edef; --header-text: #fff; --bubble-outline: none; }
         body.theme-chatgpt { --bg: #212121; --header: #212121; --border: #3d3d3d; --text: #ececec; --user-bg: #2f2f2f; --user-text: #ececec; --ai-bg: transparent; --ai-text: #ececec; --header-text: #ececec; --bubble-outline: none; }
-        
         body.theme-custom { --bubble-outline: none; }
-
         html { background-color: #000; height: 100%; overflow: hidden; }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: transparent; 
-            color: var(--text);
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column;
-            padding-top: 60px;
-            height: 100%;
-            overflow-y: auto;
-            overflow-x: hidden;
+            font-family: sans-serif; background-color: transparent; color: var(--text);
+            margin: 0; padding: 0; display: flex; flex-direction: column;
+            padding-top: 60px; height: 100%; overflow-y: auto; overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
         }
-
-        #fixed-bg-layer {
-            position: fixed; top: -10vh; left: 0; width: 100vw; height: 125vh;
-            z-index: -10; background-color: var(--bg); pointer-events: none;
-        }
-
+        #fixed-bg-layer { position: fixed; top: -10vh; left: 0; width: 100vw; height: 125vh; z-index: -10; background-color: var(--bg); pointer-events: none; }
         #video-bg, #image-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
         #video-bg { display: none; }
         #image-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
-
         header {
             position: fixed; top: 0; left: 0; width: 100%; height: 60px;
             padding: 0 12px; background: var(--header);
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border);
-            z-index: 9999; color: var(--header-text);
+            border-bottom: 1px solid var(--border); z-index: 9999; color: var(--header-text);
             box-sizing: border-box; gap: 10px;
         }
-
         .header-left { display: flex; align-items: baseline; gap: 6px; overflow: hidden; flex: 1; }
         #header-title { font-weight: bold; white-space: nowrap; flex-shrink: 0; }
         #file-name-display { font-size: 0.8em; opacity: 0.6; font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-
         .controls { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
         select, .btn-ui { background: #444; color: #fff; border: 1px solid #666; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 11px; }
-
         #custom-panel {
             display: none; background: var(--header); padding: 10px 15px;
             border-bottom: 1px solid var(--border); gap: 12px; align-items: center; justify-content: center;
             font-size: 10px; color: var(--header-text); flex-wrap: wrap;
-            position: fixed; top: 60px; left: 0; width: 100%; z-index: 9998;
-            box-sizing: border-box;
+            position: fixed; top: 60px; left: 0; width: 100%; z-index: 9998; box-sizing: border-box;
         }
         .color-group { display: flex; align-items: center; gap: 4px; }
         input[type="color"] { border: none; width: 18px; height: 18px; cursor: pointer; background: none; padding: 0; }
         .img-upload { font-size: 9px; background: #333; border: 1px solid #555; color: #ccc; border-radius: 3px; width: 110px; }
-
         #chat-container { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 900px; margin: 0 auto; width: calc(100% - 40px); }
-
         .bubble {
             max-width: 85%; padding: 15px; border-radius: 18px; line-height: 1.6;
             word-wrap: break-word; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            background: var(--ai-bg); color: var(--ai-text);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: var(--bubble-outline);
+            background: var(--ai-bg); color: var(--ai-text); border: var(--bubble-outline);
         }
         .user { align-self: flex-end; background: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; border: none !important; }
         .ai { align-self: flex-start; border-bottom-left-radius: 4px; }
-        
         .label { font-size: 0.7em; text-transform: uppercase; margin-bottom: 8px; display: block; font-weight: bold; opacity: 0.7; }
         #drop-zone { border: 2px dashed #66c0f4; padding: 60px 20px; text-align: center; margin: 40px auto; width: 80%; max-width: 600px; border-radius: 10px; cursor: pointer; background: rgba(0,0,0,0.4); z-index: 10; position: relative; }
     </style>
 </head>
 <body id="main-body">
-
-<div id="fixed-bg-layer">
-    <div id="image-bg"></div>
-    <video id="video-bg" autoplay loop muted playsinline></video>
-</div>
-
+<div id="fixed-bg-layer"><div id="image-bg"></div><video id="video-bg" autoplay loop muted playsinline></video></div>
 <header>
-    <div class="header-left">
-        <span id="header-title">Fanfic Viewer</span>
-        <span id="file-name-display"></span>
-    </div>
+    <div class="header-left"><span id="header-title">Fanfic Viewer</span><span id="file-name-display"></span></div>
     <div class="controls">
         <button id="toggle-custom" class="btn-ui">⚙️</button>
         <select id="theme-select">
@@ -112,194 +83,78 @@
         <button id="reset-page" class="btn-ui" style="display:none;">New</button>
     </div>
 </header>
-
 <div id="custom-panel">
     <div class="color-group"><label>HDR</label><input type="color" id="headerColor" value="#171a21"></div>
     <div class="color-group"><label>BG</label><input type="color" id="bgColor" value="#1b2838"></div>
     <div class="color-group"><label>USR</label><input type="color" id="userColor" value="#2a475e"></div>
     <div class="color-group"><label>AI</label><input type="color" id="aiColor" value="#3d3d3d"></div>
-    <div class="color-group">
-        <input type="file" id="bgUpload" accept="image/*,video/mp4" class="img-upload">
-    </div>
-    <button id="save-theme" class="btn-ui" style="background: #28a745; border:none; height: 22px; padding: 0 8px;">Save</button>
+    <input type="file" id="bgUpload" accept="image/*,video/mp4" class="img-upload">
+    <button id="save-theme" class="btn-ui" style="background: #28a745; border:none; height: 22px;">Save</button>
 </div>
-
 <div id="drop-zone">Click or drop your fanfic here.</div>
 <div id="chat-container"></div>
-
 <script>
-    const themeSelect = document.getElementById('theme-select');
-    const customPanel = document.getElementById('custom-panel');
-    const toggleBtn = document.getElementById('toggle-custom');
-    const body = document.getElementById('main-body');
-    const fileNameDisplay = document.getElementById('file-name-display');
-    const saveBtn = document.getElementById('save-theme');
-    const bgUpload = document.getElementById('bgUpload');
-    const videoBg = document.getElementById('video-bg');
-    const imageBg = document.getElementById('image-bg');
-    const bgLayer = document.getElementById('fixed-bg-layer');
-    const container = document.getElementById('chat-container');
-    const dropZone = document.getElementById('drop-zone');
-    const resetBtn = document.getElementById('reset-page');
-
-    let currentMedia = ""; 
-    let mediaType = ""; 
-    let currentFileName = "";
-
-    const pickers = {
-        header: document.getElementById('headerColor'),
-        bg: document.getElementById('bgColor'),
-        user: document.getElementById('userColor'),
-        ai: document.getElementById('aiColor')
-    };
-
-    body.addEventListener('scroll', () => {
-        if (currentFileName) {
-            localStorage.setItem('scrollPos_' + currentFileName, body.scrollTop);
-        }
-    });
+    const themeSelect = document.getElementById('theme-select'), customPanel = document.getElementById('custom-panel'), toggleBtn = document.getElementById('toggle-custom'), body = document.getElementById('main-body'), fileNameDisplay = document.getElementById('file-name-display'), saveBtn = document.getElementById('save-theme'), bgUpload = document.getElementById('bgUpload'), videoBg = document.getElementById('video-bg'), imageBg = document.getElementById('image-bg'), bgLayer = document.getElementById('fixed-bg-layer'), container = document.getElementById('chat-container'), dropZone = document.getElementById('drop-zone'), resetBtn = document.getElementById('reset-page');
+    let currentMedia = "", mediaType = "", currentFileName = "";
+    const pickers = { header: document.getElementById('headerColor'), bg: document.getElementById('bgColor'), user: document.getElementById('userColor'), ai: document.getElementById('aiColor') };
 
     function applyCustomMedia() {
-        body.style.setProperty('--header', pickers.header.value);
-        body.style.setProperty('--bg', pickers.bg.value);
-        bgLayer.style.setProperty('--bg', pickers.bg.value);
-        body.style.setProperty('--user-bg', pickers.user.value);
-        body.style.setProperty('--ai-bg', pickers.ai.value);
-        videoBg.style.display = "none";
-        imageBg.style.backgroundImage = "none";
-        if (mediaType === "video") {
-            videoBg.src = currentMedia;
-            videoBg.style.display = "block";
-            videoBg.play();
-        } else if (mediaType === "image") {
-            imageBg.style.backgroundImage = `url('${currentMedia}')`;
-        }
+        body.style.setProperty('--header', pickers.header.value); body.style.setProperty('--bg', pickers.bg.value); bgLayer.style.setProperty('--bg', pickers.bg.value); body.style.setProperty('--user-bg', pickers.user.value); body.style.setProperty('--ai-bg', pickers.ai.value);
+        videoBg.style.display = "none"; imageBg.style.backgroundImage = "none";
+        if (mediaType === "video") { videoBg.src = currentMedia; videoBg.style.display = "block"; videoBg.play(); } 
+        else if (mediaType === "image") { imageBg.style.backgroundImage = `url('${currentMedia}')`; }
     }
 
     bgUpload.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        const file = e.target.files[0]; if (!file) return;
         mediaType = file.type.startsWith("video") ? "video" : "image";
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            currentMedia = event.target.result;
-            applyCustomMedia();
-        };
+        const reader = new FileReader(); reader.onload = (ev) => { currentMedia = ev.target.result; applyCustomMedia(); };
         reader.readAsDataURL(file);
     };
 
     saveBtn.onclick = () => {
-        applyCustomMedia(); // Apply color fix immediately
-        const customTheme = {
-            header: pickers.header.value, bg: pickers.bg.value,
-            user: pickers.user.value, ai: pickers.ai.value,
-            lastMode: themeSelect.value,
-            savedImg: (mediaType === "image" && !currentMedia.startsWith("data:image/gif")) ? currentMedia : null 
-        };
-        localStorage.setItem('fanfic-custom-theme', JSON.stringify(customTheme));
+        applyCustomMedia();
+        localStorage.setItem('fanfic-custom-theme', JSON.stringify({header: pickers.header.value, bg: pickers.bg.value, user: pickers.user.value, ai: pickers.ai.value, lastMode: themeSelect.value, savedImg: (mediaType === "image") ? currentMedia : null }));
         alert('Theme saved!');
     };
 
     window.onload = () => {
         const saved = localStorage.getItem('fanfic-custom-theme');
         if (saved) {
-            const data = JSON.parse(saved);
-            Object.keys(pickers).forEach(key => { if(data[key]) pickers[key].value = data[key]; });
+            const data = JSON.parse(saved); Object.keys(pickers).forEach(k => { if(data[k]) pickers[k].value = data[k]; });
             if (data.savedImg) { currentMedia = data.savedImg; mediaType = "image"; }
-            if (data.lastMode === 'custom') {
-                themeSelect.value = 'custom';
-                toggleBtn.style.display = 'block';
-                body.classList.add('theme-custom');
-                applyCustomMedia();
-            }
+            if (data.lastMode === 'custom') { themeSelect.value = 'custom'; toggleBtn.style.display = 'block'; body.classList.add('theme-custom'); applyCustomMedia(); }
         }
-        
-        const lastContent = localStorage.getItem('last_file_content');
-        const lastFile = localStorage.getItem('last_file_name');
-        if (lastContent && lastFile) {
-            currentFileName = lastFile;
-            fileNameDisplay.textContent = `— ${lastFile}`;
-            parseContent(lastContent);
-            dropZone.style.display = 'none';
-            resetBtn.style.display = 'block';
-            
-            setTimeout(() => {
-                const savedScroll = localStorage.getItem('scrollPos_' + lastFile);
-                if (savedScroll) body.scrollTo(0, parseInt(savedScroll));
-            }, 100);
-        }
+        const lastContent = localStorage.getItem('last_file_content'), lastFile = localStorage.getItem('last_file_name');
+        if (lastContent && lastFile) { currentFileName = lastFile; fileNameDisplay.textContent = `— ${lastFile}`; parseContent(lastContent); dropZone.style.display = 'none'; resetBtn.style.display = 'block'; }
     };
 
     toggleBtn.onclick = () => { customPanel.style.display = (customPanel.style.display === 'flex') ? 'none' : 'flex'; };
-    
     themeSelect.onchange = () => {
         body.classList.remove('theme-custom');
-        if (themeSelect.value === 'custom') {
-            toggleBtn.style.display = 'block';
-            customPanel.style.display = 'flex';
-            body.classList.add('theme-custom');
-            applyCustomMedia();
-        } else {
-            toggleBtn.style.display = 'none';
-            customPanel.style.display = 'none';
-            body.className = themeSelect.value === 'default' ? '' : themeSelect.value;
-        }
+        if (themeSelect.value === 'custom') { toggleBtn.style.display = 'block'; customPanel.style.display = 'flex'; body.classList.add('theme-custom'); applyCustomMedia(); } 
+        else { toggleBtn.style.display = 'none'; customPanel.style.display = 'none'; body.className = themeSelect.value === 'default' ? '' : themeSelect.value; }
     };
 
-    dropZone.onclick = () => {
-        const input = document.createElement('input');
-        input.type = 'file'; input.accept = ".md,.txt";
-        input.onchange = e => handleFile(e.target.files[0]);
-        input.click();
-    };
-
-    resetBtn.onclick = () => {
-        localStorage.removeItem('last_file_content');
-        localStorage.removeItem('last_file_name');
-        location.reload();
-    };
+    dropZone.onclick = () => { const input = document.createElement('input'); input.type = 'file'; input.accept = ".md,.txt"; input.onchange = e => handleFile(e.target.files[0]); input.click(); };
+    resetBtn.onclick = () => { localStorage.removeItem('last_file_content'); localStorage.removeItem('last_file_name'); location.reload(); };
 
     function handleFile(file) {
-        if (!file) return;
-        currentFileName = file.name;
-        fileNameDisplay.textContent = `— ${file.name}`; 
-        const reader = new FileReader();
-        reader.onload = e => {
-            const content = e.target.result;
-            localStorage.setItem('last_file_content', content);
-            localStorage.setItem('last_file_name', file.name);
-            parseContent(content);
-            dropZone.style.display = 'none';
-            resetBtn.style.display = 'block';
-        };
+        if (!file) return; currentFileName = file.name; fileNameDisplay.textContent = `— ${file.name}`;
+        const reader = new FileReader(); reader.onload = e => { localStorage.setItem('last_file_content', e.target.result); localStorage.setItem('last_file_name', file.name); parseContent(e.target.result); dropZone.style.display = 'none'; resetBtn.style.display = 'block'; };
         reader.readAsText(file);
     }
 
     function parseContent(text) {
         container.innerHTML = '';
-        // PART 7 FIX: Correct split regex and header handling
         const segments = text.split(/(?=##\s+(?:Prompt|Response))/gi);
-        
         segments.forEach(segment => {
-            if (!segment.trim()) return;
-            
-            // Check if segment is user or AI
-            const isPrompt = segment.toLowerCase().includes('## prompt');
-            const isResponse = segment.toLowerCase().includes('## response');
-            
-            // If it's neither (like the header metadata), just skip it
+            const isPrompt = /##\s+Prompt/i.test(segment), isResponse = /##\s+Response/i.test(segment);
             if (!isPrompt && !isResponse) return;
-
-            const div = document.createElement('div');
-            div.className = `bubble ${isPrompt ? 'user' : 'ai'}`;
-            
-            // Remove the header line entirely (handles colons and spaces)
-            let cleanText = segment.replace(/^##\s+(?:Prompt|Response):?\s*/i, '').trim();
-            
-            // Remove the timestamp line if it exists (very common in Part 7)
-            cleanText = cleanText.replace(/^\d{1,2}\/\d{1,2}\/\d{4},.*?\n/, '').trim();
-            
-            div.innerHTML = `<span class="label">${isPrompt ? 'User' : 'ChatGPT'}</span>` + marked.parse(cleanText);
+            const div = document.createElement('div'); div.className = `bubble ${isPrompt ? 'user' : 'ai'}`;
+            let clean = segment.replace(/^##\s+(?:Prompt|Response):?\s*/i, '').trim();
+            clean = clean.replace(/^\d{1,2}\/\d{1,2}\/\d{4},.*?\n/, '').trim();
+            div.innerHTML = `<span class="label">${isPrompt ? 'User' : 'ChatGPT'}</span>` + (typeof marked !== 'undefined' ? marked.parse(clean) : clean);
             container.appendChild(div);
         });
     }
