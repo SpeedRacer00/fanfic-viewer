@@ -36,12 +36,11 @@
         }
 
         #fixed-bg-layer {
-            position: fixed; top: -10vh; left: 0; width: 100vw; height: 125vh;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: -10; background-color: var(--bg); pointer-events: none;
         }
 
-        #video-bg, #image-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-        #video-bg { display: none; }
+        #video-bg, #image-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
         #image-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
 
         header {
@@ -159,12 +158,6 @@
         ai: document.getElementById('aiColor')
     };
 
-    body.addEventListener('scroll', () => {
-        if (currentFileName) {
-            try { localStorage.setItem('scrollPos_' + currentFileName, body.scrollTop); } catch(e){}
-        }
-    });
-
     function applyCustomMedia() {
         body.style.setProperty('--header', pickers.header.value);
         body.style.setProperty('--bg', pickers.bg.value);
@@ -172,15 +165,16 @@
         body.style.setProperty('--user-bg', pickers.user.value);
         body.style.setProperty('--ai-bg', pickers.ai.value);
         
-        // Handle media display
         videoBg.style.display = "none";
-        imageBg.style.backgroundImage = "none";
-        if (mediaType === "video") {
+        imageBg.style.display = "none";
+
+        if (mediaType === "video" && currentMedia) {
             videoBg.src = currentMedia;
             videoBg.style.display = "block";
             videoBg.play();
-        } else if (mediaType === "image") {
+        } else if (mediaType === "image" && currentMedia) {
             imageBg.style.backgroundImage = `url('${currentMedia}')`;
+            imageBg.style.display = "block";
         }
     }
 
@@ -191,20 +185,19 @@
         const reader = new FileReader();
         reader.onload = (event) => {
             currentMedia = event.target.result;
-            applyCustomMedia(); // Updates colors instantly when file is chosen
+            applyCustomMedia(); // Updates colors and background instantly
         };
         reader.readAsDataURL(file);
     };
 
     saveBtn.onclick = () => {
-        // APPLY updates immediately when clicking Save
         applyCustomMedia();
-
         const customTheme = {
             header: pickers.header.value, bg: pickers.bg.value,
             user: pickers.user.value, ai: pickers.ai.value,
             lastMode: themeSelect.value,
-            savedImg: (mediaType === "image" && !currentMedia.startsWith("data:image/gif")) ? currentMedia : null 
+            savedMedia: currentMedia,
+            savedMediaType: mediaType
         };
         try { localStorage.setItem('fanfic-custom-theme', JSON.stringify(customTheme)); } catch(e){}
         alert('Theme applied and saved!');
@@ -215,7 +208,10 @@
         if (saved) {
             const data = JSON.parse(saved);
             Object.keys(pickers).forEach(key => { if(data[key]) pickers[key].value = data[key]; });
-            if (data.savedImg) { currentMedia = data.savedImg; mediaType = "image"; }
+            if (data.savedMedia) { 
+                currentMedia = data.savedMedia; 
+                mediaType = data.savedMediaType; 
+            }
             if (data.lastMode === 'custom') {
                 themeSelect.value = 'custom';
                 toggleBtn.style.display = 'block';
@@ -240,8 +236,6 @@
         }
     };
 
-    toggleBtn.onclick = () => { customPanel.style.display = (customPanel.style.display === 'flex') ? 'none' : 'flex'; };
-    
     themeSelect.onchange = () => {
         body.classList.remove('theme-custom');
         const props = ['--header', '--bg', '--user-bg', '--ai-bg', '--header-text', '--user-text', '--ai-text'];
@@ -260,23 +254,29 @@
                 bgLayer.style.removeProperty(p);
             });
             videoBg.style.display = "none";
-            imageBg.style.backgroundImage = "none";
+            imageBg.style.display = "none";
         }
     };
 
+    // --- Same Logic for File Parsing & Scroll ---
+    body.addEventListener('scroll', () => {
+        if (currentFileName) {
+            try { localStorage.setItem('scrollPos_' + currentFileName, body.scrollTop); } catch(e){}
+        }
+    });
+
+    toggleBtn.onclick = () => { customPanel.style.display = (customPanel.style.display === 'flex') ? 'none' : 'flex'; };
     dropZone.onclick = () => {
         const input = document.createElement('input');
         input.type = 'file'; input.accept = ".md,.txt";
         input.onchange = e => handleFile(e.target.files[0]);
         input.click();
     };
-
     resetBtn.onclick = () => {
         localStorage.removeItem('last_file_content');
         localStorage.removeItem('last_file_name');
         location.reload();
     };
-
     function handleFile(file) {
         if (!file) return;
         currentFileName = file.name;
@@ -294,7 +294,6 @@
         };
         reader.readAsText(file);
     }
-
     function parseContent(text) {
         container.innerHTML = '';
         const segments = text.split(/(?=## Prompt|## Response)/g);
