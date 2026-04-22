@@ -189,7 +189,7 @@
     };
 
     saveBtn.onclick = () => {
-        applyCustomMedia();
+        applyCustomMedia(); // Apply colors immediately
         const customTheme = {
             header: pickers.header.value, bg: pickers.bg.value,
             user: pickers.user.value, ai: pickers.ai.value,
@@ -277,21 +277,21 @@
 
     function parseContent(text) {
         container.innerHTML = '';
-        // FIX: Specifically handle the way "Part 7" is formatted by the exporter
-        const segments = text.split(/##\s+(?:Prompt|Response)/gi);
-        segments.forEach(segment => {
-            const trimmed = segment.trim();
-            if (trimmed.length < 5) return;
+        // Find the first occurrence of ## Prompt or ## Response to skip export metadata
+        const firstHeaderIndex = text.search(/##\s+(Prompt|Response)/i);
+        const actualContent = firstHeaderIndex !== -1 ? text.substring(firstHeaderIndex) : text;
 
-            // Detect if this segment was originally a prompt or response
-            // (Since we split BY the header, we look at the start of the next text)
-            const isPrompt = text.toLowerCase().includes('prompt' + segment.toLowerCase().substring(0, 20));
-            
+        const segments = actualContent.split(/(?=##\s+(?:Prompt|Response))/gi);
+        segments.forEach(segment => {
+            if (!segment.trim()) return;
+            const isPrompt = /##\s+Prompt/i.test(segment);
             const div = document.createElement('div');
             div.className = `bubble ${isPrompt ? 'user' : 'ai'}`;
             
-            // Cleanup colons and leading dates often found in exports
-            let cleanText = trimmed.replace(/^[:\s\d\/, :APM]+/, '').trim();
+            // Clean up the header and the date/timestamp that follows it
+            let cleanText = segment.replace(/##\s+(?:Prompt|Response):?\s*/gi, '');
+            // Optional: Remove the date line if it starts the segment (e.g., "9/2/2025...")
+            cleanText = cleanText.replace(/^\d{1,2}\/\d{1,2}\/\d{4}.*?\n/, '').trim();
             
             div.innerHTML = `<span class="label">${isPrompt ? 'User' : 'ChatGPT'}</span>` + marked.parse(cleanText);
             container.appendChild(div);
