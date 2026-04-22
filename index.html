@@ -153,6 +153,7 @@
         ai: document.getElementById('aiColor')
     };
 
+    // --- SCROLL MEMORY LOGIC ---
     body.addEventListener('scroll', () => {
         if (currentFileName) {
             localStorage.setItem('scrollPos_' + currentFileName, body.scrollTop);
@@ -213,6 +214,7 @@
             }
         }
         
+        // Auto-load last file if stored (Session persistence)
         const lastContent = localStorage.getItem('last_file_content');
         const lastFile = localStorage.getItem('last_file_name');
         if (lastContent && lastFile) {
@@ -222,6 +224,7 @@
             dropZone.style.display = 'none';
             resetBtn.style.display = 'block';
             
+            // Restore scroll position after content renders
             setTimeout(() => {
                 const savedScroll = localStorage.getItem('scrollPos_' + lastFile);
                 if (savedScroll) body.scrollTo(0, parseInt(savedScroll));
@@ -276,50 +279,16 @@
 
     function parseContent(text) {
         container.innerHTML = '';
-        
-        // This is the robust "Pair" parser that skips the header junk
-        const parts = text.split(/##\s*(Prompt|Response):?/gi);
-        
-        // Start at index 1 to skip the file metadata header
-        for (let i = 1; i < parts.length; i += 2) {
-            const type = (parts[i] || "").toLowerCase();
-            let content = parts[i + 1] || "";
-
-            if (!content.trim()) continue;
-
-            // Strip timestamps (e.g. 10/20/2025, 7:37:13 AM)
-            content = content.replace(/^\d{1,2}\/\d{1,2}\/\d{4}.*?\n/i, '');
-
-            // Specific fix for Part 7: Strip "Something went wrong" system messages
-            if (i + 2 >= parts.length) {
-                content = content.split('---')[0]
-                                .split('Powered by')[0]
-                                .split('Something went wrong')[0]
-                                .split('Retry')[0].trim();
-            }
-
-            if (content.trim()) {
-                const isUser = (type === 'prompt');
-                const div = document.createElement('div');
-                div.className = `bubble ${isUser ? 'user' : 'ai'}`;
-                
-                const label = document.createElement('span');
-                label.className = 'label';
-                label.innerText = isUser ? 'User' : 'ChatGPT';
-                
-                const textBody = document.createElement('div');
-                // Ensure marked exists before calling
-                if (window.marked) {
-                    textBody.innerHTML = marked.parse(content.trim());
-                } else {
-                    textBody.innerText = content.trim();
-                }
-                
-                div.appendChild(label);
-                div.appendChild(textBody);
-                container.appendChild(div);
-            }
-        }
+        const segments = text.split(/(?=## Prompt|## Response)/g);
+        segments.forEach(segment => {
+            if (!segment.trim()) return;
+            const isPrompt = segment.includes('## Prompt');
+            const div = document.createElement('div');
+            div.className = `bubble ${isPrompt ? 'user' : 'ai'}`;
+            const cleanText = segment.replace(/## Prompt|## Response/g, '').trim();
+            div.innerHTML = `<span class="label">${isPrompt ? 'User' : 'ChatGPT'}</span>` + marked.parse(cleanText);
+            container.appendChild(div);
+        });
     }
 </script>
 </body>
