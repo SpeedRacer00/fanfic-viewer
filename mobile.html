@@ -125,7 +125,6 @@
 <div id="chat-container"></div>
 
 <script>
-    // --- STORAGE UPGRADE: INDEXEDDB ---
     const dbName = "FanficStorage";
     const storeName = "files";
     let db;
@@ -153,7 +152,11 @@
         });
     }
 
-    // --- APP LOGIC ---
+    async function removeFromDB(key) {
+        const tx = db.transaction(storeName, "readwrite");
+        tx.objectStore(storeName).delete(key);
+    }
+
     const themeSelect = document.getElementById('theme-select');
     const customPanel = document.getElementById('custom-panel');
     const mobilePickers = document.getElementById('mobile-pickers');
@@ -298,7 +301,14 @@
         setBackgroundMedia(null);
     };
 
-    resetBtn.onclick = () => { localStorage.clear(); indexedDB.deleteDatabase(dbName); location.reload(); };
+    // --- SMART RESET: Only clears story and scroll position ---
+    resetBtn.onclick = async () => {
+        await removeFromDB('last_file_content');
+        localStorage.removeItem('last_file_name');
+        localStorage.removeItem('fanfic_scroll_pos');
+        location.reload();
+    };
+
     window.onscroll = () => { localStorage.setItem('fanfic_scroll_pos', window.scrollY); };
     toggleBtn.onclick = () => customPanel.style.display = (customPanel.style.display === 'flex') ? 'none' : 'flex';
 </script>
