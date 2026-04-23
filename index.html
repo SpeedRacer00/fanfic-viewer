@@ -24,7 +24,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: transparent; 
+            background-color: var(--bg); 
             color: var(--text);
             margin: 0; padding: 0;
             display: flex; flex-direction: column;
@@ -137,7 +137,6 @@
     const bgUpload = document.getElementById('bgUpload');
     const videoBg = document.getElementById('video-bg');
     const imageBg = document.getElementById('image-bg');
-    const bgLayer = document.getElementById('fixed-bg-layer');
     const container = document.getElementById('chat-container');
     const dropZone = document.getElementById('drop-zone');
     const resetBtn = document.getElementById('reset-page');
@@ -153,78 +152,102 @@
         ai: document.getElementById('aiColor')
     };
 
-    // REAL-TIME UPDATE LOGIC
+    function clearCustomOverrides() {
+        // This removes the inline styles that block the preset themes
+        body.style.removeProperty('--header');
+        body.style.removeProperty('--bg');
+        body.style.removeProperty('--user-bg');
+        body.style.removeProperty('--ai-bg');
+        videoBg.style.display = "none";
+        imageBg.style.backgroundImage = "none";
+    }
+
+    function syncPickersWithTheme() {
+        // Get the current computed styles and put them back into the color pickers
+        const style = getComputedStyle(body);
+        pickers.header.value = rgbToHex(style.getPropertyValue('--header').trim());
+        pickers.bg.value = rgbToHex(style.getPropertyValue('--bg').trim());
+        pickers.user.value = rgbToHex(style.getPropertyValue('--user-bg').trim());
+        pickers.ai.value = rgbToHex(style.getPropertyValue('--ai-bg').trim());
+    }
+
+    function rgbToHex(rgb) {
+        if (!rgb || !rgb.startsWith('rgb')) return rgb;
+        const [r, g, b] = rgb.match(/\d+/g).map(Number);
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
     Object.values(pickers).forEach(picker => {
         picker.addEventListener('input', () => {
-            if (themeSelect.value === 'custom') {
-                applyCustomMedia();
-            }
+            if (themeSelect.value === 'custom') applyCustomMedia();
         });
-    });
-
-    body.addEventListener('scroll', () => {
-        if (currentFileName) {
-            try { localStorage.setItem('scrollPos_' + currentFileName, body.scrollTop); } catch(e) {}
-        }
     });
 
     function applyCustomMedia() {
         body.style.setProperty('--header', pickers.header.value);
         body.style.setProperty('--bg', pickers.bg.value);
-        bgLayer.style.setProperty('--bg', pickers.bg.value);
         body.style.setProperty('--user-bg', pickers.user.value);
         body.style.setProperty('--ai-bg', pickers.ai.value);
         
         if (mediaType === "video" && currentMedia) {
-            videoBg.src = currentMedia;
-            videoBg.style.display = "block";
+            videoBg.src = currentMedia; videoBg.style.display = "block";
             imageBg.style.backgroundImage = "none";
         } else if (mediaType === "image" && currentMedia) {
             imageBg.style.backgroundImage = `url('${currentMedia}')`;
             videoBg.style.display = "none";
-        } else {
-            videoBg.style.display = "none";
-            imageBg.style.backgroundImage = "none";
         }
     }
+
+    themeSelect.onchange = () => {
+        body.classList.remove('theme-custom', 'theme-discord', 'theme-messenger', 'theme-whatsapp', 'theme-chatgpt');
+        clearCustomOverrides();
+        
+        if (themeSelect.value === 'custom') {
+            toggleBtn.style.display = 'block';
+            customPanel.style.display = 'flex';
+            body.classList.add('theme-custom');
+            applyCustomMedia();
+        } else if (themeSelect.value === 'default') {
+            toggleBtn.style.display = 'none';
+            customPanel.style.display = 'none';
+        } else {
+            toggleBtn.style.display = 'none';
+            customPanel.style.display = 'none';
+            body.classList.add(themeSelect.value);
+        }
+        syncPickersWithTheme();
+    };
 
     bgUpload.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
         mediaType = file.type.startsWith("video") ? "video" : "image";
         const reader = new FileReader();
-        reader.onload = (event) => {
-            currentMedia = event.target.result;
-            applyCustomMedia();
-        };
+        reader.onload = (ev) => { currentMedia = ev.target.result; if(themeSelect.value === 'custom') applyCustomMedia(); };
         reader.readAsDataURL(file);
     };
 
     saveBtn.onclick = () => {
         try {
-            const customTheme = {
+            const config = {
                 header: pickers.header.value, bg: pickers.bg.value,
                 user: pickers.user.value, ai: pickers.ai.value,
                 lastMode: themeSelect.value,
                 savedImg: (mediaType === "image" && !currentMedia.startsWith("data:image/gif")) ? currentMedia : null 
             };
-            localStorage.setItem('fanfic-custom-theme', JSON.stringify(customTheme));
+            localStorage.setItem('fanfic-custom-theme', JSON.stringify(config));
             alert('Theme saved!');
-        } catch(e) { alert("Storage full! Only colors saved."); }
+        } catch(e) { alert("Storage full!"); }
     };
 
     window.onload = () => {
         const saved = localStorage.getItem('fanfic-custom-theme');
         if (saved) {
             const data = JSON.parse(saved);
-            Object.keys(pickers).forEach(key => { if(data[key]) pickers[key].value = data[key]; });
+            Object.keys(pickers).forEach(k => { if(data[k]) pickers[k].value = data[k]; });
             if (data.savedImg) { currentMedia = data.savedImg; mediaType = "image"; }
-            if (data.lastMode === 'custom') {
-                themeSelect.value = 'custom';
-                toggleBtn.style.display = 'block';
-                body.classList.add('theme-custom');
-                applyCustomMedia();
-            }
+            themeSelect.value = data.lastMode || 'default';
+            themeSelect.onchange();
         }
         
         const lastContent = localStorage.getItem('last_file_content');
@@ -235,28 +258,10 @@
             parseContent(lastContent);
             dropZone.style.display = 'none';
             resetBtn.style.display = 'block';
-            setTimeout(() => {
-                const savedScroll = localStorage.getItem('scrollPos_' + lastFile);
-                if (savedScroll) body.scrollTo(0, parseInt(savedScroll));
-            }, 100);
         }
     };
 
     toggleBtn.onclick = () => { customPanel.style.display = (customPanel.style.display === 'flex') ? 'none' : 'flex'; };
-    
-    themeSelect.onchange = () => {
-        body.classList.remove('theme-custom');
-        if (themeSelect.value === 'custom') {
-            toggleBtn.style.display = 'block';
-            customPanel.style.display = 'flex';
-            body.classList.add('theme-custom');
-            applyCustomMedia();
-        } else {
-            toggleBtn.style.display = 'none';
-            customPanel.style.display = 'none';
-            body.className = themeSelect.value === 'default' ? '' : themeSelect.value;
-        }
-    };
 
     dropZone.onclick = () => {
         const input = document.createElement('input');
@@ -274,14 +279,14 @@
     function handleFile(file) {
         if (!file) return;
         currentFileName = file.name;
-        fileNameDisplay.textContent = `— ${file.name}`; 
+        fileNameDisplay.textContent = `— ${file.name}`;
         const reader = new FileReader();
         reader.onload = e => {
             const content = e.target.result;
             try {
                 localStorage.setItem('last_file_content', content);
                 localStorage.setItem('last_file_name', file.name);
-            } catch(err) { console.warn("Storage full."); }
+            } catch(err) {}
             parseContent(content);
             dropZone.style.display = 'none';
             resetBtn.style.display = 'block';
@@ -296,20 +301,16 @@
             const type = parts[i].toLowerCase();
             let content = parts[i + 1] || "";
             content = content.replace(/^\d{1,2}\/\d{1,2}\/\d{4}.*?\n/i, '');
-            if (i + 2 >= parts.length) {
-                content = content.split('---')[0].split('Powered by')[0].split('Something went wrong')[0].trim();
-            }
+            if (i + 2 >= parts.length) content = content.split('---')[0].split('Something went wrong')[0].trim();
             if (content.trim()) {
                 const isUser = (type === 'prompt');
                 const div = document.createElement('div');
                 div.className = `bubble ${isUser ? 'user' : 'ai'}`;
                 const label = document.createElement('span');
-                label.className = 'label';
-                label.innerText = isUser ? 'User' : 'ChatGPT';
+                label.className = 'label'; label.innerText = isUser ? 'User' : 'ChatGPT';
                 const textBody = document.createElement('div');
                 textBody.innerHTML = marked.parse(content.trim());
-                div.appendChild(label);
-                div.appendChild(textBody);
+                div.appendChild(label); div.appendChild(textBody);
                 container.appendChild(div);
             }
         }
