@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <style>
         /* --- THEME DEFINITIONS --- */
+        /* Steam Blue is the Default (:root) */
         :root {
             --bg: #1b2838; --header: #171a21; --border: #2a475e; --text: #dcdedc;
             --user-bg: #2a475e; --user-text: #66c0f4; --ai-bg: #3d3d3d; --ai-text: #fff;
@@ -153,7 +154,6 @@
     };
 
     function clearCustomOverrides() {
-        // This removes the inline styles that block the preset themes
         body.style.removeProperty('--header');
         body.style.removeProperty('--bg');
         body.style.removeProperty('--user-bg');
@@ -163,7 +163,6 @@
     }
 
     function syncPickersWithTheme() {
-        // Get the current computed styles and put them back into the color pickers
         const style = getComputedStyle(body);
         pickers.header.value = rgbToHex(style.getPropertyValue('--header').trim());
         pickers.bg.value = rgbToHex(style.getPropertyValue('--bg').trim());
@@ -173,7 +172,9 @@
 
     function rgbToHex(rgb) {
         if (!rgb || !rgb.startsWith('rgb')) return rgb;
-        const [r, g, b] = rgb.match(/\d+/g).map(Number);
+        const matches = rgb.match(/\d+/g);
+        if (!matches) return rgb;
+        const [r, g, b] = matches.map(Number);
         return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     }
 
@@ -199,6 +200,7 @@
     }
 
     themeSelect.onchange = () => {
+        // Clear all possible theme classes
         body.classList.remove('theme-custom', 'theme-discord', 'theme-messenger', 'theme-whatsapp', 'theme-chatgpt');
         clearCustomOverrides();
         
@@ -208,6 +210,7 @@
             body.classList.add('theme-custom');
             applyCustomMedia();
         } else if (themeSelect.value === 'default') {
+            // Steam Blue is the base CSS, no extra class needed
             toggleBtn.style.display = 'none';
             customPanel.style.display = 'none';
         } else {
@@ -215,7 +218,8 @@
             customPanel.style.display = 'none';
             body.classList.add(themeSelect.value);
         }
-        syncPickersWithTheme();
+        // Force picker colors to match the theme immediately
+        setTimeout(syncPickersWithTheme, 10);
     };
 
     bgUpload.onchange = (e) => {
@@ -223,7 +227,10 @@
         if (!file) return;
         mediaType = file.type.startsWith("video") ? "video" : "image";
         const reader = new FileReader();
-        reader.onload = (ev) => { currentMedia = ev.target.result; if(themeSelect.value === 'custom') applyCustomMedia(); };
+        reader.onload = (ev) => { 
+            currentMedia = ev.target.result; 
+            if(themeSelect.value === 'custom') applyCustomMedia(); 
+        };
         reader.readAsDataURL(file);
     };
 
