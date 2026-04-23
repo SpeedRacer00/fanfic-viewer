@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <style>
         /* --- THEME DEFINITIONS --- */
-        /* Updated to Official Steam Hex Codes */
+        /* Official Steam Color Palette */
         :root {
             --bg: #1b2838;           /* Steam Dark Blue/Grey */
             --header: #171a21;       /* Steam Header Black */
@@ -15,7 +15,7 @@
             --text: #c7d5e0;         /* Steam Light Blue Text */
             --user-bg: #2a475e;      /* User Bubble Blue */
             --user-text: #66c0f4;    /* Steam Bright Blue */
-            --ai-bg: #3d3d3d;        /* Neutral AI Bubble */
+            --ai-bg: rgba(30, 32, 38, 0.8); /* Dark Slate AI Bubble */
             --ai-text: #ffffff;
             --header-text: #66c0f4;
             --bubble-outline: 1px solid var(--border);
@@ -92,6 +92,8 @@
         .ai { align-self: flex-start; border-bottom-left-radius: 4px; }
         
         .label { font-size: 0.7em; text-transform: uppercase; margin-bottom: 8px; display: block; font-weight: bold; opacity: 0.7; }
+        .user .label { color: var(--user-text); } /* Make User label pop in Steam theme */
+        
         #drop-zone { border: 2px dashed #66c0f4; padding: 60px 20px; text-align: center; margin: 40px auto; width: 80%; max-width: 600px; border-radius: 10px; cursor: pointer; background: rgba(0,0,0,0.4); z-index: 10; position: relative; }
     </style>
 </head>
@@ -125,7 +127,7 @@
     <div class="color-group"><label>HDR</label><input type="color" id="headerColor" value="#171a21"></div>
     <div class="color-group"><label>BG</label><input type="color" id="bgColor" value="#1b2838"></div>
     <div class="color-group"><label>USR</label><input type="color" id="userColor" value="#2a475e"></div>
-    <div class="color-group"><label>AI</label><input type="color" id="aiColor" value="#3d3d3d"></div>
+    <div class="color-group"><label>AI</label><input type="color" id="aiColor" value="#1e2026"></div>
     <div class="color-group">
         <input type="file" id="bgUpload" accept="image/*,video/mp4" class="img-upload">
     </div>
@@ -179,6 +181,7 @@
 
     function rgbToHex(rgb) {
         if (!rgb || !rgb.startsWith('rgb')) return rgb;
+        // Support for rgba used in AI bubble
         const matches = rgb.match(/\d+/g);
         if (!matches) return rgb;
         const [r, g, b] = matches.map(Number);
@@ -223,7 +226,7 @@
             customPanel.style.display = 'none';
             body.classList.add(themeSelect.value);
         }
-        setTimeout(syncPickersWithTheme, 50);
+        setTimeout(syncPickersWithTheme, 100);
     };
 
     bgUpload.onchange = (e) => {
