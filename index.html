@@ -14,7 +14,7 @@
             --text: #c7d5e0;
             --user-bg: #2a475e;
             --user-text: #66c0f4;
-            --ai-bg: #1e2026; /* Solid by default */
+            --ai-bg: #1e2026;
             --ai-text: #ffffff;
             --header-text: #66c0f4;
             --bubble-outline: 1px solid var(--border);
@@ -25,7 +25,7 @@
         body.theme-whatsapp { --bg: #0b141a; --header: #202c33; --border: #222d34; --text: #e9edef; --user-bg: #005c4b; --user-text: #e9edef; --ai-bg: #202c33; --ai-text: #e9edef; --header-text: #fff; --bubble-outline: none; }
         body.theme-chatgpt { --bg: #212121; --header: #212121; --border: #3d3d3d; --text: #ececec; --user-bg: #2f2f2f; --user-text: #ececec; --ai-bg: #212121; --ai-text: #ececec; --header-text: #ececec; --bubble-outline: none; }
         
-        html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
+        html, body { height: 100%; margin: 0; padding: 0; background-color: #000; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -35,17 +35,14 @@
             overflow-y: auto;
             position: relative;
             background-color: var(--bg);
+            scroll-behavior: smooth;
         }
 
-        /* Fixed Background Layer */
         #fixed-bg-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -10;
-            pointer-events: none;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            display: none; /* Only shown via JS if image exists */
+            z-index: -10; pointer-events: none;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            display: none;
         }
 
         header {
@@ -71,14 +68,10 @@
 
         #chat-container { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 900px; margin: 0 auto; width: calc(100% - 40px); position: relative; z-index: 1; }
 
-        /* SOLID BUBBLES - No transparency or blur */
         .bubble {
             max-width: 85%; padding: 15px; border-radius: 18px; line-height: 1.6;
             word-wrap: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            background-color: var(--ai-bg); 
-            color: var(--ai-text);
-            border: var(--bubble-outline);
-            opacity: 1 !important;
+            background-color: var(--ai-bg); color: var(--ai-text); border: var(--bubble-outline);
         }
         .user { align-self: flex-end; background-color: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; border: none !important; }
         .ai { align-self: flex-start; border-bottom-left-radius: 4px; }
@@ -145,13 +138,14 @@
         ai: document.getElementById('aiColor')
     };
 
-    function applyCustomMedia() {
-        if(themeSelect.value !== 'custom') return;
-        body.style.setProperty('--header', pickers.header.value);
-        body.style.setProperty('--bg', pickers.bg.value);
-        body.style.setProperty('--user-bg', pickers.user.value);
-        body.style.setProperty('--ai-bg', pickers.ai.value);
-    }
+    // --- POSITION SAVING ---
+    let scrollTimeout;
+    body.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            localStorage.setItem('fanfic_scroll_pos', body.scrollTop);
+        }, 200);
+    });
 
     function setBackgroundImage(data) {
         if (data) {
@@ -184,12 +178,17 @@
         bgUpload.value = "";
     };
 
+    function applyCustomMedia() {
+        if(themeSelect.value !== 'custom') return;
+        body.style.setProperty('--header', pickers.header.value);
+        body.style.setProperty('--bg', pickers.bg.value);
+        body.style.setProperty('--user-bg', pickers.user.value);
+        body.style.setProperty('--ai-bg', pickers.ai.value);
+    }
+
     themeSelect.onchange = () => {
         body.className = ''; 
-        body.style.removeProperty('--header');
-        body.style.removeProperty('--bg');
-        body.style.removeProperty('--user-bg');
-        body.style.removeProperty('--ai-bg');
+        ['--header', '--bg', '--user-bg', '--ai-bg'].forEach(prop => body.style.removeProperty(prop));
 
         if (themeSelect.value === 'custom') {
             customPanel.style.display = 'flex';
@@ -199,17 +198,13 @@
             customPanel.style.display = 'none';
             if (themeSelect.value !== 'default') body.classList.add(themeSelect.value);
         }
-        const savedBg = localStorage.getItem('fanfic_custom_bg');
-        setBackgroundImage(savedBg);
+        setBackgroundImage(localStorage.getItem('fanfic_custom_bg'));
     };
 
     saveBtn.onclick = () => {
         const config = {
-            header: pickers.header.value,
-            bg: pickers.bg.value,
-            user: pickers.user.value,
-            ai: pickers.ai.value,
-            themeMode: themeSelect.value
+            header: pickers.header.value, bg: pickers.bg.value,
+            user: pickers.user.value, ai: pickers.ai.value, themeMode: themeSelect.value
         };
         localStorage.setItem('fanfic_custom_colors', JSON.stringify(config));
         saveBtn.innerText = "Saved!";
@@ -223,10 +218,7 @@
         const savedTheme = localStorage.getItem('fanfic_custom_colors');
         if (savedTheme) {
             const config = JSON.parse(savedTheme);
-            pickers.header.value = config.header;
-            pickers.bg.value = config.bg;
-            pickers.user.value = config.user;
-            pickers.ai.value = config.ai;
+            Object.keys(pickers).forEach(key => pickers[key].value = config[key]);
             themeSelect.value = config.themeMode || 'default';
         }
         themeSelect.onchange();
@@ -236,18 +228,16 @@
             document.getElementById('file-name-display').textContent = `— ${localStorage.getItem('last_file_name')}`;
             dropZone.style.display = 'none';
             resetBtn.style.display = 'block';
-            
-            const observer = new MutationObserver(() => {
-                const savedScroll = localStorage.getItem('last_scroll_pos');
-                if (savedScroll) { body.scrollTop = parseInt(savedScroll); }
-                observer.disconnect();
-            });
-            observer.observe(container, { childList: true });
             parseContent(lastContent);
+
+            // Restore scroll after content is rendered
+            setTimeout(() => {
+                const savedScroll = localStorage.getItem('fanfic_scroll_pos');
+                if (savedScroll) body.scrollTop = parseInt(savedScroll);
+            }, 100);
         }
     });
 
-    body.onscroll = () => localStorage.setItem('last_scroll_pos', body.scrollTop);
     Object.values(pickers).forEach(p => p.oninput = applyCustomMedia);
     toggleBtn.onclick = () => customPanel.style.display = (customPanel.style.display === 'flex') ? 'none' : 'flex';
     
@@ -259,9 +249,7 @@
     };
 
     resetBtn.onclick = () => {
-        localStorage.removeItem('last_file_content');
-        localStorage.removeItem('last_file_name');
-        localStorage.removeItem('last_scroll_pos');
+        localStorage.clear();
         location.reload();
     };
 
@@ -269,10 +257,17 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = e => {
-            localStorage.setItem('last_file_content', e.target.result);
+            const content = e.target.result;
+            localStorage.setItem('last_file_content', content);
             localStorage.setItem('last_file_name', file.name);
-            localStorage.setItem('last_scroll_pos', 0);
-            location.reload();
+            localStorage.setItem('fanfic_scroll_pos', 0);
+            
+            // Render immediately instead of reloading
+            document.getElementById('file-name-display').textContent = `— ${file.name}`;
+            dropZone.style.display = 'none';
+            resetBtn.style.display = 'block';
+            parseContent(content);
+            body.scrollTop = 0;
         };
         reader.readAsText(file);
     }
