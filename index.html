@@ -12,9 +12,8 @@
             --header: #171a21;
             --border: #2a475e;
             --text: #c7d5e0;
-            /* Blue from image_3.png, now defaults to White text below */
             --user-bg: #2a475e; 
-            --user-text: #ffffff; /* REQUEST CHANGE: User text white by default */
+            --user-text: #ffffff; 
             --ai-bg: #1e2026;
             --ai-text: #ffffff;
             --header-text: #66c0f4;
@@ -43,12 +42,11 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -10; pointer-events: none;
             background-size: cover; background-position: center; background-repeat: no-repeat;
-            display: none;
         }
 
         #bg-video {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; display: none;
+            object-fit: cover; display: none; background: transparent;
         }
 
         header {
@@ -147,18 +145,9 @@
         ai: document.getElementById('aiColor')
     };
 
-    // Scroll Position Tracking
-    let scrollTimeout;
-    body.addEventListener('scroll', () => {
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
-            localStorage.setItem('fanfic_scroll_pos', body.scrollTop);
-        }, 200);
-    });
-
-    // Helper function for contrast calculation
     function getContrastYIQ(hexcolor){
         hexcolor = hexcolor.replace("#", "");
+        if(hexcolor.length === 3) hexcolor = hexcolor.split('').map(s => s+s).join('');
         const r = parseInt(hexcolor.substr(0,2),16);
         const g = parseInt(hexcolor.substr(2,2),16);
         const b = parseInt(hexcolor.substr(4,2),16);
@@ -170,42 +159,40 @@
         if (!data) {
             fixedBg.style.backgroundImage = 'none';
             bgVideo.style.display = 'none';
+            bgVideo.pause();
             bgVideo.src = "";
             body.style.backgroundColor = 'var(--bg)';
             return;
         }
 
-        if (data.startsWith('data:video/mp4') || data.endsWith('.mp4')) {
+        const isVideo = data.startsWith('data:video') || data.includes('.mp4');
+
+        if (isVideo) {
             fixedBg.style.backgroundImage = 'none';
             bgVideo.src = data;
             bgVideo.style.display = 'block';
-            bgVideo.play().catch(() => {
-                console.log("Video waiting for interaction...");
-            });
+            bgVideo.load();
+            bgVideo.play().catch(() => console.log("Video suspended. Click to resume."));
         } else {
             bgVideo.style.display = 'none';
+            bgVideo.pause();
             bgVideo.src = "";
             fixedBg.style.backgroundImage = `url(${data})`;
         }
         body.style.backgroundColor = 'transparent';
     }
 
-    // New logic with Size Alert
     bgUpload.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const mediaData = event.target.result;
-                
-                // 1. Show it immediately
                 setBackgroundMedia(mediaData);
-
-                // 2. Try to save
                 try {
                     localStorage.setItem('fanfic_custom_bg', mediaData);
                 } catch (err) {
-                    alert("⚠️ This file is too large to save permanently (>5MB).\n\nIt will stay visible for now, but you'll have to re-select it next time you open the app.");
+                    alert("⚠️ File too large to save! It will work for this session only.");
                     localStorage.removeItem('fanfic_custom_bg');
                 }
             };
@@ -219,32 +206,26 @@
         bgUpload.value = "";
     };
 
-    // Kickstart video on first interaction
-    document.addEventListener('mousedown', () => {
+    // Global "Resume Media" on first click
+    document.addEventListener('click', () => {
         if (bgVideo.style.display === 'block' && bgVideo.paused) {
             bgVideo.play();
         }
     }, { once: true });
 
-    // UPDATED applyCustomMedia with REQUESTED CHANGE
     function applyCustomMedia() {
         if(themeSelect.value !== 'custom') return;
         body.style.setProperty('--header', pickers.header.value);
         body.style.setProperty('--bg', pickers.bg.value);
         body.style.setProperty('--user-bg', pickers.user.value);
         body.style.setProperty('--ai-bg', pickers.ai.value);
-
-        // Update User bubble text color automatically
         body.style.setProperty('--user-text', getContrastYIQ(pickers.user.value));
-        
-        // Ensure AI bubble also has contrast (defaults to AI text color)
         body.style.setProperty('--ai-text', getContrastYIQ(pickers.ai.value));
     }
 
     themeSelect.onchange = () => {
         body.className = ''; 
-        ['--header', '--bg', '--user-bg', '--ai-bg', '--user-text', '--ai-text'].forEach(prop => body.style.removeProperty(prop));
-
+        ['--header', '--bg', '--user-bg', '--ai-bg', '--user-text', '--ai-text'].forEach(p => body.style.removeProperty(p));
         if (themeSelect.value === 'custom') {
             customPanel.style.display = 'flex';
             body.classList.add('theme-custom');
@@ -268,7 +249,10 @@
 
     window.addEventListener('load', () => {
         const savedBg = localStorage.getItem('fanfic_custom_bg');
-        if (savedBg) setBackgroundMedia(savedBg);
+        if (savedBg) {
+            // Slight delay to allow DOM to settle for video
+            setTimeout(() => setBackgroundMedia(savedBg), 50);
+        }
 
         const savedTheme = localStorage.getItem('fanfic_custom_colors');
         if (savedTheme) {
@@ -284,13 +268,19 @@
             dropZone.style.display = 'none';
             resetBtn.style.display = 'block';
             parseContent(lastContent);
-            
             setTimeout(() => {
                 const savedScroll = localStorage.getItem('fanfic_scroll_pos');
                 if (savedScroll) body.scrollTop = parseInt(savedScroll);
-            }, 150);
+            }, 200);
         }
     });
+
+    body.onscroll = () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            localStorage.setItem('fanfic_scroll_pos', body.scrollTop);
+        }, 250);
+    };
 
     Object.values(pickers).forEach(p => p.oninput = applyCustomMedia);
     toggleBtn.onclick = () => customPanel.style.display = (customPanel.style.display === 'flex') ? 'none' : 'flex';
@@ -303,7 +293,11 @@
     };
 
     resetBtn.onclick = () => {
+        const bg = localStorage.getItem('fanfic_custom_bg');
+        const theme = localStorage.getItem('fanfic_custom_colors');
         localStorage.clear();
+        if(bg) localStorage.setItem('fanfic_custom_bg', bg);
+        if(theme) localStorage.setItem('fanfic_custom_colors', theme);
         location.reload();
     };
 
@@ -311,16 +305,10 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = e => {
-            const content = e.target.result;
-            localStorage.setItem('last_file_content', content);
+            localStorage.setItem('last_file_content', e.target.result);
             localStorage.setItem('last_file_name', file.name);
             localStorage.setItem('fanfic_scroll_pos', 0);
-            
-            document.getElementById('file-name-display').textContent = `— ${file.name}`;
-            dropZone.style.display = 'none';
-            resetBtn.style.display = 'block';
-            parseContent(content);
-            body.scrollTop = 0;
+            location.reload(); // Reload on file change is safer for DOM reset
         };
         reader.readAsText(file);
     }
