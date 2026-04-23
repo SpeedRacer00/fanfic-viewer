@@ -25,7 +25,7 @@
         body.theme-whatsapp { --bg: #0b141a; --header: #202c33; --border: #222d34; --text: #e9edef; --user-bg: #005c4b; --user-text: #ffffff; --ai-bg: #202c33; --ai-text: #e9edef; --header-text: #fff; --bubble-outline: none; }
         body.theme-chatgpt { --bg: #212121; --header: #212121; --border: #3d3d3d; --text: #ececec; --user-bg: #2f2f2f; --user-text: #ffffff; --ai-bg: #212121; --ai-text: #ececec; --header-text: #ececec; --bubble-outline: none; }
         
-        html, body { height: 100%; margin: 0; padding: 0; background-color: #000; }
+        html, body { height: 100%; margin: 0; padding: 0; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -34,14 +34,17 @@
             padding-top: 60px;
             overflow-y: auto;
             position: relative;
+            /* Default fallback */
             background-color: var(--bg);
             scroll-behavior: smooth;
         }
 
+        /* Fixed Background Layer - This now handles solid colors too */
         #fixed-bg-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -10; pointer-events: none;
             background-size: cover; background-position: center; background-repeat: no-repeat;
+            background-color: var(--bg); /* Keeps color solid even when scrolling */
         }
 
         #bg-video {
@@ -161,7 +164,8 @@
             bgVideo.style.display = 'none';
             bgVideo.pause();
             bgVideo.src = "";
-            body.style.backgroundColor = 'var(--bg)';
+            // Ensure the fixed layer still shows the theme color if no media
+            fixedBg.style.backgroundColor = 'var(--bg)';
             return;
         }
 
@@ -179,7 +183,8 @@
             bgVideo.src = "";
             fixedBg.style.backgroundImage = `url(${data})`;
         }
-        body.style.backgroundColor = 'transparent';
+        // When media is active, we don't want the solid color overlaying it
+        fixedBg.style.backgroundColor = isVideo ? 'transparent' : 'var(--bg)';
     }
 
     bgUpload.onchange = (e) => {
@@ -206,7 +211,6 @@
         bgUpload.value = "";
     };
 
-    // Global "Resume Media" on first click
     document.addEventListener('click', () => {
         if (bgVideo.style.display === 'block' && bgVideo.paused) {
             bgVideo.play();
@@ -221,11 +225,15 @@
         body.style.setProperty('--ai-bg', pickers.ai.value);
         body.style.setProperty('--user-text', getContrastYIQ(pickers.user.value));
         body.style.setProperty('--ai-text', getContrastYIQ(pickers.ai.value));
+        
+        // Force the fixed layer to update its solid color immediately
+        fixedBg.style.backgroundColor = pickers.bg.value;
     }
 
     themeSelect.onchange = () => {
         body.className = ''; 
         ['--header', '--bg', '--user-bg', '--ai-bg', '--user-text', '--ai-text'].forEach(p => body.style.removeProperty(p));
+        
         if (themeSelect.value === 'custom') {
             customPanel.style.display = 'flex';
             body.classList.add('theme-custom');
@@ -233,6 +241,8 @@
         } else {
             customPanel.style.display = 'none';
             if (themeSelect.value !== 'default') body.classList.add(themeSelect.value);
+            // Update fixed background color based on theme root variables
+            fixedBg.style.backgroundColor = 'var(--bg)';
         }
         setBackgroundMedia(localStorage.getItem('fanfic_custom_bg'));
     };
@@ -250,7 +260,6 @@
     window.addEventListener('load', () => {
         const savedBg = localStorage.getItem('fanfic_custom_bg');
         if (savedBg) {
-            // Slight delay to allow DOM to settle for video
             setTimeout(() => setBackgroundMedia(savedBg), 50);
         }
 
@@ -275,6 +284,7 @@
         }
     });
 
+    let scrollTimeout;
     body.onscroll = () => {
         clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
@@ -308,7 +318,7 @@
             localStorage.setItem('last_file_content', e.target.result);
             localStorage.setItem('last_file_name', file.name);
             localStorage.setItem('fanfic_scroll_pos', 0);
-            location.reload(); // Reload on file change is safer for DOM reset
+            location.reload();
         };
         reader.readAsText(file);
     }
