@@ -39,15 +39,26 @@
             -webkit-overflow-scrolling: touch;
         }
 
+        /* Fixed layer is now just a container */
         #fixed-bg-layer {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -10; background-color: var(--bg); pointer-events: none;
+            z-index: -10; 
+            pointer-events: none;
+            background-color: var(--bg); /* Fallback color */
         }
 
         #image-bg { 
+            position: absolute;
+            top: 0; left: 0;
             width: 100%; height: 100%; 
             object-fit: cover; 
-            display: none; /* Only show if image exists */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Class added via JS when image is loaded */
+        .has-bg-image #image-bg {
+            opacity: 1;
         }
 
         header {
@@ -75,7 +86,7 @@
         }
         input[type="color"]::-webkit-color-swatch { border: none; }
 
-        #chat-container { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 900px; margin: 0 auto; width: calc(100% - 40px); }
+        #chat-container { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 900px; margin: 0 auto; width: calc(100% - 40px); position: relative; z-index: 1; }
 
         .bubble {
             max-width: 85%; padding: 15px; border-radius: 18px; line-height: 1.6;
@@ -176,15 +187,23 @@
         body.style.setProperty('--ai-text', getContrastYIQ(aColor));
     }
 
-    // --- BG LOGIC ---
+    function setBackgroundImage(data) {
+        if (data) {
+            imageBg.src = data;
+            body.classList.add('has-bg-image');
+        } else {
+            imageBg.src = "";
+            body.classList.remove('has-bg-image');
+        }
+    }
+
     bgUpload.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const imgData = event.target.result;
-                imageBg.src = imgData;
-                imageBg.style.display = 'block';
+                setBackgroundImage(imgData);
                 localStorage.setItem('fanfic_custom_bg', imgData);
             };
             reader.readAsDataURL(file);
@@ -192,8 +211,7 @@
     };
 
     clearBgBtn.onclick = () => {
-        imageBg.src = "";
-        imageBg.style.display = 'none';
+        setBackgroundImage(null);
         localStorage.removeItem('fanfic_custom_bg');
     };
 
@@ -216,10 +234,7 @@
 
     window.addEventListener('load', () => {
         const savedBg = localStorage.getItem('fanfic_custom_bg');
-        if (savedBg) {
-            imageBg.src = savedBg;
-            imageBg.style.display = 'block';
-        }
+        if (savedBg) setBackgroundImage(savedBg);
 
         const savedTheme = localStorage.getItem('fanfic_custom_colors');
         if (savedTheme) {
