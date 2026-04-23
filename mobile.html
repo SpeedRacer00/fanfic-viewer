@@ -25,7 +25,6 @@
             color: var(--text);
             display: flex; flex-direction: column;
             padding-top: 70px;
-            /* Base color is set via JS to avoid covering images */
             background-color: var(--bg); 
             background-attachment: fixed;
         }
@@ -168,7 +167,7 @@
             bgVideo.style.display = 'none';
             bgVideo.pause();
             bgVideo.src = "";
-            body.style.backgroundColor = 'var(--bg)'; // Use theme color
+            body.style.backgroundColor = 'var(--bg)';
             return;
         }
 
@@ -178,12 +177,12 @@
             bgVideo.src = data;
             bgVideo.style.display = 'block';
             bgVideo.play().catch(() => {});
-            body.style.backgroundColor = 'black'; // Black backdrop for video
+            body.style.backgroundColor = 'black';
         } else {
             bgVideo.style.display = 'none';
             bgVideo.pause();
             fixedBg.style.backgroundImage = `url("${data}")`;
-            body.style.backgroundColor = 'transparent'; // Let image show through
+            body.style.backgroundColor = 'transparent';
         }
     }
 
@@ -292,20 +291,31 @@
         reader.readAsText(file);
     }
 
+    /* ENHANCED PARSER: Fixes missing parts */
     function parseContent(text) {
         container.innerHTML = '';
-        const parts = text.split(/##\s*(Prompt|Response):?/gi);
-        for (let i = 1; i < parts.length; i += 2) {
-            const type = parts[i].toLowerCase();
-            let content = (parts[i + 1] || "").split('---')[0].split('Powered by')[0].trim();
-            if (content) {
-                const isUser = (type === 'prompt');
-                const div = document.createElement('div');
-                div.className = `bubble ${isUser ? 'user' : 'ai'}`;
-                div.innerHTML = `<span class="label">${isUser ? 'User' : 'ChatGPT'}</span><div>${marked.parse(content)}</div>`;
-                container.appendChild(div);
+        // Splits by ## Prompt or ## Response (Case Insensitive)
+        const parts = text.split(/(?=##\s*(?:Prompt|Response):?)/gi);
+        
+        parts.forEach(part => {
+            const isUser = /##\s*Prompt/i.test(part);
+            const isAI = /##\s*Response/i.test(part);
+            
+            if (isUser || isAI) {
+                // Remove the header from the content
+                let cleanContent = part.replace(/##\s*(?:Prompt|Response):?/i, '').trim();
+                
+                // Cut off at separators or footers
+                cleanContent = cleanContent.split(/---/)[0].split(/Powered by/i)[0].trim();
+                
+                if (cleanContent) {
+                    const div = document.createElement('div');
+                    div.className = `bubble ${isUser ? 'user' : 'ai'}`;
+                    div.innerHTML = `<span class="label">${isUser ? 'User' : 'ChatGPT'}</span><div>${marked.parse(cleanContent)}</div>`;
+                    container.appendChild(div);
+                }
             }
-        }
+        });
     }
 </script>
 </body>
