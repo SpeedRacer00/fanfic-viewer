@@ -32,7 +32,7 @@
         #fixed-bg-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -10; background-size: cover; background-position: center;
-            background-color: var(--bg);
+            background-color: var(--bg); /* Fallback color */
         }
 
         #bg-video {
@@ -56,7 +56,7 @@
             min-height: 44px;
         }
 
-        /* Fix for File Upload button extending past others */
+        /* Fixed Button Alignment */
         input[type="file"].btn-ui {
             width: 100%;
             display: block;
@@ -178,6 +178,7 @@
             fixedBg.style.backgroundColor = 'var(--bg)';
             return;
         }
+
         const isVideo = data.startsWith('data:video') || data.includes('.mp4');
         if (isVideo) {
             fixedBg.style.backgroundImage = 'none';
@@ -185,13 +186,14 @@
             bgVideo.style.display = 'block';
             bgVideo.load();
             bgVideo.play().catch(() => {});
+            fixedBg.style.backgroundColor = 'transparent'; // Fix: show video
         } else {
             bgVideo.style.display = 'none';
             bgVideo.pause();
             bgVideo.src = "";
             fixedBg.style.backgroundImage = `url(${data})`;
+            fixedBg.style.backgroundColor = 'transparent'; // Fix: show image
         }
-        fixedBg.style.backgroundColor = isVideo ? 'transparent' : 'var(--bg)';
     }
 
     bgUpload.onchange = (e) => {
@@ -201,7 +203,11 @@
             reader.onload = (event) => {
                 const mediaData = event.target.result;
                 setBackgroundMedia(mediaData);
-                try { localStorage.setItem('fanfic_custom_bg', mediaData); } catch (err) { alert("File too large!"); }
+                try { 
+                    localStorage.setItem('fanfic_custom_bg', mediaData); 
+                } catch (err) { 
+                    alert("File too large to save for next time, but it will work now!"); 
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -221,21 +227,32 @@
         body.style.setProperty('--ai-bg', pickers.ai.value);
         body.style.setProperty('--user-text', getContrastYIQ(pickers.user.value));
         body.style.setProperty('--ai-text', getContrastYIQ(pickers.ai.value));
-        fixedBg.style.backgroundColor = pickers.bg.value;
+        
+        // If no image is set, use the custom picker color
+        if(!localStorage.getItem('fanfic_custom_bg')) {
+            fixedBg.style.backgroundColor = pickers.bg.value;
+        }
     }
 
     themeSelect.onchange = () => {
         body.className = ''; 
         mobilePickers.style.display = (themeSelect.value === 'custom') ? 'flex' : 'none';
         ['--header', '--bg', '--user-bg', '--ai-bg', '--user-text', '--ai-text'].forEach(p => body.style.removeProperty(p));
+        
         if (themeSelect.value === 'custom') {
             body.classList.add('theme-custom');
             applyCustomMedia();
         } else {
             if (themeSelect.value !== 'default') body.classList.add(themeSelect.value);
-            fixedBg.style.backgroundColor = 'var(--bg)';
         }
-        setBackgroundMedia(localStorage.getItem('fanfic_custom_bg'));
+
+        // Final check: media always wins over solid color
+        const savedBg = localStorage.getItem('fanfic_custom_bg');
+        if (savedBg) {
+            setBackgroundMedia(savedBg);
+        } else {
+            fixedBg.style.backgroundColor = (themeSelect.value === 'custom') ? pickers.bg.value : 'var(--bg)';
+        }
     };
 
     saveBtn.onclick = () => {
@@ -245,7 +262,10 @@
         };
         localStorage.setItem('fanfic_custom_colors', JSON.stringify(config));
         saveBtn.innerText = "Saved!";
-        setTimeout(() => { saveBtn.innerText = "Save Settings"; customPanel.style.display = 'none'; }, 1000);
+        setTimeout(() => { 
+            saveBtn.innerText = "Save Settings"; 
+            customPanel.style.display = 'none'; 
+        }, 1000);
     };
 
     window.addEventListener('load', () => {
