@@ -14,16 +14,16 @@
             --text: #c7d5e0;
             --user-bg: #2a475e;
             --user-text: #66c0f4;
-            --ai-bg: rgba(30, 32, 38, 0.8);
+            --ai-bg: #1e2026; /* Solid by default */
             --ai-text: #ffffff;
             --header-text: #66c0f4;
             --bubble-outline: 1px solid var(--border);
         }
         
-        body.theme-discord { --bg: #313338; --header: #1e1f22; --border: #232428; --text: #dbdee1; --user-bg: #404249; --user-text: #dbdee1; --ai-bg: rgba(43, 45, 49, 0.8); --ai-text: #dbdee1; --header-text: #fff; --bubble-outline: 1px solid var(--border); }
+        body.theme-discord { --bg: #313338; --header: #1e1f22; --border: #232428; --text: #dbdee1; --user-bg: #404249; --user-text: #dbdee1; --ai-bg: #2b2d31; --ai-text: #dbdee1; --header-text: #fff; --bubble-outline: 1px solid var(--border); }
         body.theme-messenger { --bg: #000000; --header: #121212; --border: #222; --text: #fff; --user-bg: #0084ff; --user-text: #fff; --ai-bg: #242526; --ai-text: #fff; --header-text: #fff; --bubble-outline: none; }
         body.theme-whatsapp { --bg: #0b141a; --header: #202c33; --border: #222d34; --text: #e9edef; --user-bg: #005c4b; --user-text: #e9edef; --ai-bg: #202c33; --ai-text: #e9edef; --header-text: #fff; --bubble-outline: none; }
-        body.theme-chatgpt { --bg: #212121; --header: #212121; --border: #3d3d3d; --text: #ececec; --user-bg: #2f2f2f; --user-text: #ececec; --ai-bg: transparent; --ai-text: #ececec; --header-text: #ececec; --bubble-outline: none; }
+        body.theme-chatgpt { --bg: #212121; --header: #212121; --border: #3d3d3d; --text: #ececec; --user-bg: #2f2f2f; --user-text: #ececec; --ai-bg: #212121; --ai-text: #ececec; --header-text: #ececec; --bubble-outline: none; }
         
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
 
@@ -45,6 +45,7 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            display: none; /* Only shown via JS if image exists */
         }
 
         header {
@@ -70,18 +71,20 @@
 
         #chat-container { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 900px; margin: 0 auto; width: calc(100% - 40px); position: relative; z-index: 1; }
 
+        /* SOLID BUBBLES - No transparency or blur */
         .bubble {
             max-width: 85%; padding: 15px; border-radius: 18px; line-height: 1.6;
-            word-wrap: break-word; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            background: var(--ai-bg); color: var(--ai-text);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            word-wrap: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            background-color: var(--ai-bg); 
+            color: var(--ai-text);
             border: var(--bubble-outline);
+            opacity: 1 !important;
         }
-        .user { align-self: flex-end; background: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; border: none !important; }
+        .user { align-self: flex-end; background-color: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; border: none !important; }
         .ai { align-self: flex-start; border-bottom-left-radius: 4px; }
         
         .label { font-size: 0.7em; text-transform: uppercase; margin-bottom: 8px; display: block; font-weight: bold; opacity: 0.8; }
-        #drop-zone { border: 2px dashed #66c0f4; padding: 60px 20px; text-align: center; margin: 40px auto; width: 80%; max-width: 600px; border-radius: 10px; cursor: pointer; background: rgba(0,0,0,0.4); }
+        #drop-zone { border: 2px dashed #66c0f4; padding: 60px 20px; text-align: center; margin: 40px auto; width: 80%; max-width: 600px; border-radius: 10px; cursor: pointer; background: rgba(0,0,0,0.6); }
     </style>
 </head>
 <body id="main-body">
@@ -153,9 +156,11 @@
     function setBackgroundImage(data) {
         if (data) {
             fixedBg.style.backgroundImage = `url(${data})`;
+            fixedBg.style.display = 'block';
             body.style.backgroundColor = 'transparent'; 
         } else {
             fixedBg.style.backgroundImage = 'none';
+            fixedBg.style.display = 'none';
             body.style.backgroundColor = 'var(--bg)';
         }
     }
@@ -180,12 +185,11 @@
     };
 
     themeSelect.onchange = () => {
-        // Reset classes and specific inline styles
         body.className = ''; 
         body.style.removeProperty('--header');
         body.style.removeProperty('--bg');
-        body.style.setProperty('--user-bg', '');
-        body.style.setProperty('--ai-bg', '');
+        body.style.removeProperty('--user-bg');
+        body.style.removeProperty('--ai-bg');
 
         if (themeSelect.value === 'custom') {
             customPanel.style.display = 'flex';
@@ -195,7 +199,6 @@
             customPanel.style.display = 'none';
             if (themeSelect.value !== 'default') body.classList.add(themeSelect.value);
         }
-        // Re-check background image layering
         const savedBg = localStorage.getItem('fanfic_custom_bg');
         setBackgroundImage(savedBg);
     };
