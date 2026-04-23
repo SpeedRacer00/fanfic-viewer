@@ -167,7 +167,11 @@
         body.style.setProperty('--ai-text', getContrastYIQ(aColor));
     }
 
-    // --- SAVE & LOAD CONTENT/THEME ---
+    // --- SAVE SCROLL POSITION ---
+    body.onscroll = () => {
+        localStorage.setItem('last_scroll_pos', body.scrollTop);
+    };
+
     saveBtn.onclick = () => {
         const config = {
             header: pickers.header.value,
@@ -202,6 +206,12 @@
             parseContent(lastContent);
             dropZone.style.display = 'none';
             resetBtn.style.display = 'block';
+
+            // RESTORE SCROLL
+            const savedScroll = localStorage.getItem('last_scroll_pos');
+            if (savedScroll) {
+                setTimeout(() => { body.scrollTop = savedScroll; }, 100);
+            }
         }
     });
 
@@ -234,6 +244,7 @@
     resetBtn.onclick = () => {
         localStorage.removeItem('last_file_content');
         localStorage.removeItem('last_file_name');
+        localStorage.removeItem('last_scroll_pos'); // Clear scroll on reset
         location.reload();
     };
 
@@ -245,6 +256,7 @@
             const content = e.target.result;
             localStorage.setItem('last_file_content', content);
             localStorage.setItem('last_file_name', file.name);
+            localStorage.setItem('last_scroll_pos', 0); // New file starts at top
             parseContent(content);
             dropZone.style.display = 'none';
             resetBtn.style.display = 'block';
