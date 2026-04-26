@@ -231,15 +231,18 @@
         await applyAllSettings();
         const lastContent = await getFromDB('last_file_content');
         if (lastContent) {
-            document.getElementById('file-name-display').textContent = localStorage.getItem('last_file_name');
+            document.getElementById('file-name-display').textContent = localStorage.getItem('last_file_name') || "Loaded Story";
             dropZone.style.display = 'none';
             resetBtn.style.display = 'inline-flex';
             parseContent(lastContent);
-            const scroll = localStorage.getItem('fanfic_scroll_pos');
-            if (scroll) window.scrollTo(0, parseInt(scroll));
+            
+            // Small delay for scroll to ensure bubbles are rendered
+            setTimeout(() => {
+                const scroll = localStorage.getItem('fanfic_scroll_pos');
+                if (scroll) window.scrollTo(0, parseInt(scroll));
+            }, 100);
         }
     }
-
     dropZone.onclick = () => {
         const input = document.createElement('input');
         input.type = 'file'; input.accept = ".md,.txt";
@@ -251,10 +254,20 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async e => {
-            await saveToDB('last_file_content', e.target.result);
+            const content = e.target.result;
+            
+            // 1. Save to database
+            await saveToDB('last_file_content', content);
             localStorage.setItem('last_file_name', file.name);
             localStorage.setItem('fanfic_scroll_pos', 0);
-            location.reload();
+            
+            // 2. Instead of reloading, we trigger the UI update manually
+            document.getElementById('file-name-display').textContent = file.name;
+            dropZone.style.display = 'none';
+            resetBtn.style.display = 'inline-flex';
+            
+            parseContent(content); // This puts the bubbles on screen instantly
+            window.scrollTo(0, 0);
         };
         reader.readAsText(file);
     }
